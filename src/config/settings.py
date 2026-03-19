@@ -18,6 +18,7 @@ if not GEMINI_API_KEY:
 
 # MODEL Configuration
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "llama3.2:3b")
 
 # Base URLS for OpenAI compatible endpoints
 # Google Gemini
@@ -25,11 +26,8 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
 
 # Database paths
-SQL_DB_PATH = os.getenv("SQL_DB_PATH")
-VECTOR_DB = os.getenv("VECTOR_DB")
-
-if not SQL_DB_PATH or not VECTOR_DB:
-    raise ValueError("SQL and Vector databases are not set in environment variable")
+SQL_DB_PATH = os.getenv("SQL_DB_PATH", "src/data/chat_history.db")
+VECTOR_DB = os.getenv("VECTOR_DB", "src/data/chroma_db")
 
 # Optional: other settings
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
