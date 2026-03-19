@@ -15,8 +15,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from src.config import settings
 
 # Import memory
-from src.memory import episodic
-from src.memory import summarizer
+from src.memory import episodic, summarizer, semantic
 
 
 class BaseAgent:
@@ -48,9 +47,13 @@ class BaseAgent:
         # Initialize the model
         self.model = settings.OLLAMA_MODEL_NAME
 
-        # Initialize the database, create table if needed
+        # Initialize the databases, create table if needed
         episodic.init_db()
         summarizer.init_summary_table()
+        semantic.init_semantic_table()
+
+        # Store facts in a dictionary
+        self.facts = {}
 
         # Use existing or generate a unique session ID for this conversation
         if session_id:
@@ -58,11 +61,16 @@ class BaseAgent:
             # Load past messages from the database
             past_messages = episodic.get_recent_messages(self.session_id, limit=10)
 
+            for role, content in past_messages:
+                self.add_message(role, content)
+
             # Load the latest summary for the session
             self.summary = summarizer.get_latest_summary(self.session_id)
 
-            for role, content in past_messages:
-                self.add_message(role, content)
+            # Load existing facts if any
+            facts_list = semantic.get_all_facts(self.session_id)
+            for fact in facts_list:
+                self.facts[fact["key"]] = fact["value"]
 
         else:
             self.session_id = uuid4()
@@ -87,6 +95,16 @@ class BaseAgent:
         episodic.save_message(
             session_id=self.session_id, role="user", content=user_input
         )
+
+        extracted_facts = self._extract_facts(user_input)
+        for key, value, confidence in extracted_facts:
+            semantic.save_fact(
+                session_id=self.session_id, key=key, value=value, confidence=confidence
+            )
+            self.facts[key] = value
+
+        # Check if we need to summarize
+        self._maybe_summarize(keep_last=10, threshold=20)
 
         # Get streaming response from LLM
         response = self.client.chat.completions.create(
@@ -140,7 +158,12 @@ class BaseAgent:
                 }
             )
 
-        context.extend(self.messages[1:])
+        if self.facts:
+            # Add the facts to the context if available (better to add with a system prompt)
+            facts_str = ", ".join(f"{k}: {v}" for k, v in self.facts.items())
+            context.append({"role": "system", "content": f"User facts: {facts_str}"})
+
+        context.extend(self.messages[1:])  # Recent messages
         return context
 
     def _maybe_summarize(self, keep_last: int = 10, threshold: int = 20):
@@ -196,3 +219,47 @@ class BaseAgent:
         summarizer.save_summary(
             session_id=self.session_id, summary=summary, message_count=len(older_msgs)
         )
+
+    def _extract_facts(self, user_input: str) -> List[tuple[str, str, float]]:
+        """
+        Use LLM to extract factual infomation from user message.
+        Return list of (key, value, confidence) tuples.
+        """
+        prompt = f"""Extract factual information about the user from this message. 
+        Return each fact as a line in the format "key: value". Only include facts that are stated or clearly implied. Use lowercase keys with underscores.
+
+        Examples:
+        Message: "My name is John and I love Python"
+        Facts:
+        name: john
+        likes_python: true
+
+        Message: "I'm from New York and I hate JavaScript"
+        Facts:
+        location: new york
+        likes_javascript: false
+
+        Message: "{user_input}"
+        Facts:
+        """
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=200,
+        )
+        content = response.choices[0].message.content
+        if not content:
+            return []
+
+        facts = []
+        for line in content.strip().split("\n"):
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip().lower().replace(" ", "_")
+                value = value.strip()
+                # Simple confidence: 1.0 for now (could be inferred from tone later)
+                facts.append((key, value, 1.0))
+
+        return facts
