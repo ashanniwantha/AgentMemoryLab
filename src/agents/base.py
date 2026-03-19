@@ -30,7 +30,6 @@ class BaseAgent:
             role: Short identified role within the system (e.g, "supervisor, "summarizer")
             personality: system prompt that describes the behavior of the agent
         """
-        # Defaulting to a known stable model if the env var is missing
         self.role = role
         self.personality = personality
 
