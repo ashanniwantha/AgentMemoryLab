@@ -1,2 +1,2 @@
 # Makes agent a package
-from .BaseAgent import BaseAgent
+from .base import BaseAgent
