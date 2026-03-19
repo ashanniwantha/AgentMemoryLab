@@ -1,7 +1,4 @@
-from dotenv import load_dotenv
-from src.agent import BaseAgent
-
-load_dotenv()
+from src.agents import BaseAgent
 
 
 class Supervisor(BaseAgent):

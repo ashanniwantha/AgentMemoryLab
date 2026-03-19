@@ -75,7 +75,7 @@ class BaseAgent:
                 full_response += content
 
         # Add assistant response to the conversation state
-        self.add_message(self.role, full_response)
+        self.add_message("assistant", full_response)
         print()  # newline after response
 
         return full_response

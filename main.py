@@ -2,19 +2,20 @@ from src.agent.supervisor import Supervisor
 
 
 def main():
-    print("---Welcome to the Agent Memory Lab!\n")
+    print("\n---Welcome to the Agent Memory Lab!---")
+
+    supervisor = Supervisor()
 
     # Loop for user to interact with the system via prompts
     while True:
         # prompt input
-        prompt = input("You > ")
+        prompt = input("\nYou > ")
 
         if prompt == "quit":
             print("\n---Goodbye!---")
             break
 
-        supervisor = Supervisor()
-        supervisor.ask(prompt)
+        supervisor.stream_response(prompt)
 
 
 if __name__ == "__main__":
