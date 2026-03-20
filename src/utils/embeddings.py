@@ -1,16 +1,16 @@
 from typing import List
-from uuid import UUID
 
-from openai import embeddings
-from src.config import settings, clients
+from src.config import settings
+from src.clients import get_openai_client
 
 
-def get_embeddings(text: str) -> List[float]:
+async def get_embeddings(text: str) -> List[float]:
     """Get embedding from Ollama using the dedicated embedding model."""
-    # Intialize the client
-    client = clients.get_openai_client()
+    # Get the shared client
+    client = get_openai_client()
 
-    response = client.embeddings.create(
+    # Use the client
+    response = await client.embeddings.create(
         model=settings.OLLAMA_EMBEDDING_MODEL, input=text
     )
     return response.data[0].embedding

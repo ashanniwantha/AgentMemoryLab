@@ -1,8 +1,10 @@
+import asyncio
+from src.clients import close_client
 from src.agents.supervisor import Supervisor
 from uuid import UUID
 
 
-def main():
+async def main():
     print("\n---Welcome to the Agent Memory Lab!---")
 
     # Ask if resuming a session
@@ -22,10 +24,12 @@ def main():
     while True:
         prompt = input("\nYou > ")
         if prompt.lower() == "quit":
-            print("\n---Goodbye!---")
             break
-        supervisor.stream_response(prompt)
+        await supervisor.stream_response(prompt)
+
+    await close_client()
+    print("\n---Goodbye!---")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
