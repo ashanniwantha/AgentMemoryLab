@@ -15,7 +15,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from src.config import settings
 
 # Import memory
-from src.memory import episodic, summarizer, semantic
+from src.memory import episodic, summarizer, semantic, vector_store
 
 
 class BaseAgent:
@@ -66,6 +66,7 @@ class BaseAgent:
 
             # Load the latest summary for the session
             self.summary = summarizer.get_latest_summary(self.session_id)
+            self.relevant_messages = []
 
             # Load existing facts if any
             facts_list = semantic.get_all_facts(self.session_id)
@@ -103,6 +104,24 @@ class BaseAgent:
             )
             self.facts[key] = value
 
+        # Get embeddings fr
+        user_embeddings = self._get_embeddings(user_input)
+
+        # Query similar past messages (before storing current one!)
+        self.relevant_messages = vector_store.query_similar_messages(
+            session_id=self.session_id, query_embedding=user_embeddings, n_results=5
+        )
+
+        # Store user Message Embeddings
+        user_msg_id = str(uuid4())
+        vector_store.add_message_embedding(
+            session_id=self.session_id,
+            message_id=user_msg_id,
+            role="user",
+            content=user_input,
+            embedding=user_embeddings,
+        )
+
         # Check if we need to summarize
         self._maybe_summarize(keep_last=10, threshold=20)
 
@@ -127,6 +146,17 @@ class BaseAgent:
 
         episodic.save_message(
             session_id=self.session_id, role="assistant", content=full_response
+        )
+
+        # Store assistant message embedding
+        assistant_msg_id = str(uuid4())
+        assistant_embedding = self._get_embeddings(full_response)
+        vector_store.add_message_embedding(
+            self.session_id,
+            assistant_msg_id,
+            "assistant",
+            full_response,
+            assistant_embedding,
         )
 
         # Check if we need to summarize
@@ -162,6 +192,14 @@ class BaseAgent:
             # Add the facts to the context if available (better to add with a system prompt)
             facts_str = ", ".join(f"{k}: {v}" for k, v in self.facts.items())
             context.append({"role": "system", "content": f"User facts: {facts_str}"})
+
+        if self.relevant_messages:
+            relevant_str = "Relevant past messages:\n"
+            for msg in self.relevant_messages:
+                role = msg["metadata"]["role"]
+                content = msg["metadata"]["content"]
+                relevant_str += f"{role}: {content}\n"
+            context.append({"role": "system", "content": relevant_str})
 
         context.extend(self.messages[1:])  # Recent messages
         return context
@@ -263,3 +301,10 @@ class BaseAgent:
                 facts.append((key, value, 1.0))
 
         return facts
+
+    def _get_embeddings(self, text: str) -> List[float]:
+        """Get embedding from Ollama using the dedicated embedding model."""
+        response = self.client.embeddings.create(
+            model=settings.OLLAMA_EMBEDDING_MODEL, input=text
+        )
+        return response.data[0].embedding
