@@ -56,6 +56,21 @@ class MemoryService:
         for fact in facts_list:
             self.facts[fact["key"]] = fact["value"]
 
+    async def load_one_fact(self, key: str) -> Optional[str]:
+        """Retrive a fact by key."""
+        # First check the cache
+        if key in self.facts:
+            return self.facts[key]
+
+        fact = await semantic.get_fact(session_id=self.session_id, key=key)
+        return fact["value"] if fact else None
+
+    async def set_fact(self, key: str, value: str, confidence: float = 1.0) -> None:
+        """Store a fact (overwrite or create)"""
+        await semantic.save_fact(
+            self.session_id, key=key, value=value, confidence=confidence
+        )
+
     async def _extract_facts(self, text: str) -> List[tuple[str, str, float]]:
         """
         Use LLM to extract factual infomation from user message.
@@ -100,8 +115,11 @@ class MemoryService:
 
         return facts
 
-    async def _background_extract_facts(self, content: str):
-        """Background task for fact extraction"""
+    async def _extract_and_save_facts(self, content: str):
+        """
+        Background task for fact extraction from the user message
+        and save it in the semantic database
+        """
         extracted = await self._extract_facts(content)
         async with self.lock:
             for key, value, confidence in extracted:
@@ -128,7 +146,7 @@ class MemoryService:
             embedding=embeddings,
         )
 
-        asyncio.create_task(self._background_extract_facts(content))
+        asyncio.create_task(self._extract_and_save_facts(content))
 
     async def store_assistant_message(self, content: str):
         """Store a assistant message"""
