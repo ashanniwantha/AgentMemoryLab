@@ -14,6 +14,8 @@ class DraftAgent(BaseAgent):
         """
         Generate a draft for a given topic using LLM and store it in semantic memory.
         """
+        await self.memory_service.init()
+
         prompt = f"Write a medium‑length, creative story based on the following topic:\n{topic}"
 
         response = await self.client.chat.completions.create(
