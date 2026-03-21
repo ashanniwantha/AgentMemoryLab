@@ -24,7 +24,7 @@ OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:l
 # Base URLS for OpenAI compatible endpoints
 # Google Gemini
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
 # Database paths
 SQL_DB_PATH = os.getenv("SQL_DB_PATH", "src/data/chat_history.db")
