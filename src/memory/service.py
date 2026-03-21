@@ -4,6 +4,7 @@ Handles all memory operations (episodic, semantic, vector, summarization)
 and provides a clean API for agents to utilize.
 """
 
+import logging
 import asyncio
 from typing import List, Dict, Optional, Any
 from uuid import UUID, uuid4
@@ -15,6 +16,8 @@ from src.config import settings
 from src.memory import episodic, semantic, vector_store, summarizer
 from src.utils.embeddings import get_embeddings
 from src.utils.token_counter import get_message_tokens
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryService:
@@ -87,27 +90,18 @@ class MemoryService:
         Use LLM to extract factual information from user message.
         Returns list of (key, value, confidence) tuples.
         """
-        prompt = f"""Extract factual information about the user from this message. 
-        Return each fact as a line in the format "key: value". Only include facts that are stated or clearly implied. Use lowercase keys with underscores.
-
-        Examples:
-        Message: "My name is John and I love Python"
-        Facts:
-        name: john
-        likes_python: true
-
-        Message: "I'm from New York and I hate JavaScript"
-        Facts:
-        location: new york
-        likes_javascript: false
-
-        Message: "{text}"
-        Facts:
-        """
+        system_message: ChatCompletionMessageParam = {
+            "role": "system",
+            "content": "You are a fact extraction assistant. Extract factual information about the user from the user's message. Output each fact as a line in the format 'key: value'. Use lowercase keys with underscores. Do not add any extra text, commentary, or explanations. Only output lines with key-value pairs.",
+        }
+        user_message: ChatCompletionMessageParam = {
+            "role": "user",
+            "content": f"User message: {text}\n\nExtracted facts:",
+        }
 
         response = await self.client.chat.completions.create(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[system_message, user_message],
             temperature=0.2,
             max_tokens=200,
         )
@@ -117,10 +111,19 @@ class MemoryService:
 
         facts = []
         for line in content.strip().split("\n"):
+            line = line.strip()
             if ":" in line:
                 key, value = line.split(":", 1)
                 key = key.strip().lower().replace(" ", "_")
                 value = value.strip()
+                # Filter out common noise
+                if (
+                    len(key) > 30
+                    or "fact" in key
+                    or key.startswith("the")
+                    or key in ["message", "response", "question"]
+                ):
+                    continue
                 facts.append((key, value, 1.0))
         return facts
 
@@ -137,6 +140,7 @@ class MemoryService:
                     confidence=confidence,
                 )
                 self.user_facts[key] = value
+        logger.info(f"Extracted {len(extracted)} facts.")
 
     # ---- Message storage (core memory) ----
     async def store_user_message(self, content: str) -> None:
@@ -153,6 +157,7 @@ class MemoryService:
 
         # Background fact extraction (don't wait)
         asyncio.create_task(self._extract_and_save_facts(content))
+        logger.debug(f"Launched background fact extraction for: {content[:50]}...")
 
     async def store_assistant_message(self, content: str) -> None:
         """Store an assistant message (episodic + vector)."""
@@ -221,6 +226,8 @@ class MemoryService:
         older_msgs = conversation[:-keep_last]
         recent_msgs = conversation[-keep_last:]
 
+        logger.info(f"Summarization triggered. Older messages count: {len(older_msgs)}")
+
         # Build text to summarize
         text_to_summarize = "\n".join(
             f"{msg['role']}: {msg.get('content')}" for msg in older_msgs
@@ -248,6 +255,8 @@ class MemoryService:
 
         # Update cached summary for future context
         self.summary = summary
+
+        logger.info(f"Summarization completed. New summary length: {len(summary)}")
 
         # Return trimmed message list (system + recent messages)
         return [system_msg] + recent_msgs

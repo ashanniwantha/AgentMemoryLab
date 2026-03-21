@@ -17,8 +17,8 @@ if not GEMINI_API_KEY:
 
 
 # MODEL Configuration
-GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini/gemini-2.5-flash")
-OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "olalama/llama3.2:3b")
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "llama3.2:3b")
 OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
 
 # Base URLS for OpenAI compatible endpoints

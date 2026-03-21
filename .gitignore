@@ -11,3 +11,8 @@ wheels/
 
 # Secrets
 .env
+
+# Project data (ignore databases and vector stores)
+# Ignore only these files
+src/data/chat_history.db
+src/data/chroma_db/

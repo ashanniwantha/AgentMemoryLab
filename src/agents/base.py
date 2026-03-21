@@ -3,6 +3,7 @@ BaseAgent: Parent Class for all agents
 Handles client/model initialization and holds conversation state
 """
 
+import logging
 from typing import cast, List, Optional
 from uuid import uuid4, UUID
 
@@ -11,6 +12,8 @@ from openai.types.chat import ChatCompletionMessageParam
 from src.clients import get_openai_client
 from src.config import settings
 from src.memory import episodic, service  # service for MemoryService
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent:
@@ -89,6 +92,7 @@ class BaseAgent:
 
         if summaried is not None:
             self.messages = summaried
+            logger.info("Summarization applied, messages trimmed.")
 
         # 5. Build full prompt
         prompt = self._build_prompt(service_context)

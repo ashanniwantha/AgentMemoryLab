@@ -59,6 +59,7 @@ async def main():
             session_id = uuid.uuid4()
     else:
         session_id = uuid.uuid4()
+        print(f"New session ID: {session_id}")
 
     supervisor = Supervisor(session_id)
 
