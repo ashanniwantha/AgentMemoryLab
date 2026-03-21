@@ -14,6 +14,7 @@ from src.clients import get_openai_client
 from src.config import settings
 from src.memory import episodic, semantic, vector_store, summarizer
 from src.utils.embeddings import get_embeddings
+from src.utils.token_counter import get_message_tokens
 
 
 class MemoryService:
@@ -200,14 +201,10 @@ class MemoryService:
         self,
         messages: List[ChatCompletionMessageParam],
         keep_last: int = 10,
-        threshold: int = 20,
+        token_threshold: int = 8000,  # Token threshold (adjust as needed)
     ) -> Optional[List[ChatCompletionMessageParam]]:
-        """
-        Check if summarization is needed. If the conversation length (excluding system)
-        exceeds `threshold`, summarize messages older than the last `keep_last`.
-        Returns the trimmed message list (system + recent messages) or None if no summarization.
-        """
-        if len(messages) - 1 > threshold:
+        total_tokens = get_message_tokens(messages)
+        if total_tokens > token_threshold:
             return await self._summarize_older_messages(messages, keep_last)
         return None
 

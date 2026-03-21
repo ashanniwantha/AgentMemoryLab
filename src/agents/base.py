@@ -6,6 +6,8 @@ Handles client/model initialization and holds conversation state
 from typing import cast, List, Optional
 from uuid import uuid4, UUID
 
+from litellm import acompletion
+
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
@@ -83,7 +85,9 @@ class BaseAgent:
 
         # 4. Check if summarization is needed
         summaried = await self.memory_service.maybe_summarize(
-            self.messages, keep_last=10, threshold=20
+            self.messages,
+            keep_last=10,
+            token_threshold=settings.SUMMARIZATION_TOKEN_THRESHOLD,
         )
 
         if summaried is not None:
@@ -93,9 +97,7 @@ class BaseAgent:
         prompt = self._build_prompt(service_context)
 
         # 6. Stream the response
-        response = await self.client.chat.completions.create(
-            model=self.model, messages=prompt, stream=True
-        )
+        response = await acompletion(model=self.model, messages=prompt, stream=True)
 
         print(f"\n{self.role.upper()}> ", end="", flush=True)
         full_response = ""
@@ -115,7 +117,9 @@ class BaseAgent:
 
         # 9. Check summarization again (optional)
         summaried = await self.memory_service.maybe_summarize(
-            self.messages, keep_last=10, threshold=20
+            self.messages,
+            keep_last=10,
+            token_threshold=settings.SUMMARIZATION_TOKEN_THRESHOLD,
         )
 
         if summaried is not None:
