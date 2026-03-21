@@ -34,14 +34,23 @@ Modern AI agents need more than conversation history. They need structured facts
 
 ```mermaid
 graph TD
-    Supervisor[Supervisor Agent] --> MemoryService
-    Pipeline[Story Pipeline<br/>(Draft, Critics, Consolidator)] --> MemoryService
-    Reflection[Reflection Agent] --> MemoryService
+    User((User)) --> Supervisor[Supervisor Agent]
+    Supervisor --> MemoryService[Memory Orchestrator]
+    
+    subgraph Pipeline [Story Generation Pipeline]
+        Supervisor --> Draft[Draft Agent]
+        Draft --> Critics["Style & Fact Critics (Parallel)"]
+        Critics --> Consolidator[Consolidator Agent]
+    end
 
-    MemoryService --> Episodic[(Episodic<br/>SQLite)]
-    MemoryService --> Semantic[(Semantic<br/>SQLite)]
-    MemoryService --> Vector[(Vector<br/>ChromaDB)]
-    MemoryService --> Summaries[(Summaries<br/>SQLite)]
+    subgraph MemoryLayers [Memory Layers]
+        MemoryService --> Episodic[("Episodic (SQLite)<br/>Raw Logs")]
+        MemoryService --> Semantic[("Semantic (SQLite)<br/>Structured Facts")]
+        MemoryService --> Vector[("Vector (ChromaDB)<br/>Semantic Search")]
+        MemoryService --> Summary[("Summaries (SQLite)<br/>Compressed Context")]
+    end
+
+    MemoryService --> Reflection[Reflection Agent]
 ```
 
 ## Prerequisites
