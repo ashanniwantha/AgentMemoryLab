@@ -10,6 +10,34 @@ The system follows a layered memory architecture commonly used in production AI 
 3. **Semantic Memory** – structured facts about the user (SQLite with categories)
 4. **Vector Memory** – embeddings for semantic search (ChromaDB)
 
+## High‑Level Overview
+
+```mermaid
+graph TD
+    User((User)) <--> Supervisor[Supervisor Agent]
+    Supervisor <--> Orchestrator[Memory Orchestrator / Service]
+    
+    subgraph Memory_Layers [Layered Memory System]
+        Episodic[(Episodic: SQLite <br/> Raw Logs)]
+        Semantic[(Semantic: SQLite <br/> Structured Facts)]
+        Vector[(Vector: ChromaDB <br/> Semantic Search)]
+        Summaries[(Summaries: SQLite <br/> Compressed Context)]
+    end
+    
+    Orchestrator <--> Episodic
+    Orchestrator <--> Semantic
+    Orchestrator <--> Vector
+    Orchestrator <--> Summaries
+    
+    subgraph Specialized_Agents [Task Agents]
+        Reflection[Reflection Agent]
+        Pipeline[Story Generation Pipeline]
+    end
+    
+    Reflection -- Periodic/On-demand --> Orchestrator
+    Pipeline -- Async Interaction --> Orchestrator
+```
+
 ## Core Components
 
 ### 1. `MemoryService` (Central Memory Manager)
