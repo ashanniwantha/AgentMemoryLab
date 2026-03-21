@@ -97,7 +97,9 @@ class BaseAgent:
         prompt = self._build_prompt(service_context)
 
         # 6. Stream the response
-        response = await acompletion(model=self.model, messages=prompt, stream=True)
+        response = await self.client.chat.completions.create(
+            model=self.model, messages=prompt, stream=True
+        )
 
         print(f"\n{self.role.upper()}> ", end="", flush=True)
         full_response = ""

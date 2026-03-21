@@ -13,17 +13,28 @@ class ReflectionAgent(BaseAgent):
     async def reflect(self) -> str:
         await self.memory_service.init()
 
-        # Use the cached user facts (these are only user_fact category)
-        facts = self.memory_service.user_facts
-        if not facts:
-            return "No user facts to analyze"
+        # Get all entries except those in 'insight' category (to avoid self‑reference)
+        all_entries = await self.memory_service.get_all_entries(
+            exclude_categories=["insight"]
+        )
+        if not all_entries:
+            return "No entries to analyze."
 
-        prompt = f"""Based on the following facts about the user, generate a concise summary 
-        touching on topics such as user's interests, preferences, potential goals and more.
-        Highlight any patterns or significant details.
+        # Format entries for the prompt
+        entries_text = ""
+        for entry in all_entries:
+            entries_text += f"[{entry['category']}] {entry['key']}: {entry['value']}\n"
 
-        Facts:
-        {', '.join(f'{k}: {v}' for k, v in facts.items())}
+        prompt = f"""
+        You are a meta‑cognitive analyst. Review the following collection of memories, including user facts, story drafts, feedback, final stories, and other notes.
+        Generate a concise summary that captures:
+        - The user's interests and patterns
+        - The quality or progression of any creative work (like stories)
+        - Any notable contradictions or improvements
+        - Suggestions for further exploration or next steps
+
+        Memories:
+        {entries_text}
 
         Insights:
         """
@@ -32,9 +43,7 @@ class ReflectionAgent(BaseAgent):
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
         )
-        insights = response.choices[0].message.content
-        if insights is None:
-            insights = ""
+        insights = response.choices[0].message.content or ""
 
         # Store insights with category 'insight'
         await self.memory_service.store_entry(

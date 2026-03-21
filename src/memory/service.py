@@ -5,7 +5,7 @@ and provides a clean API for agents to utilize.
 """
 
 import asyncio
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from uuid import UUID, uuid4
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -251,3 +251,14 @@ class MemoryService:
 
         # Return trimmed message list (system + recent messages)
         return [system_msg] + recent_msgs
+
+    async def get_all_entries(
+        self, exclude_categories: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieve all entries from semantic memory, optionally excluding some categories."""
+        all_entries = await semantic.get_all_semantic(self.session_id)
+        if exclude_categories:
+            all_entries = [
+                e for e in all_entries if e["category"] not in exclude_categories
+            ]
+        return all_entries
