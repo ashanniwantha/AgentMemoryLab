@@ -20,7 +20,6 @@ if not GEMINI_API_KEY:
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini/gemini-2.5-flash")
 OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "olalama/llama3.2:3b")
 OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
-SUMMARIZATION_TOKEN_THRESHOLD = int(os.getenv("SUMMARIZATION_TOKEN_THRESHOLD", 8000))
 
 # Base URLS for OpenAI compatible endpoints
 # Google Gemini
@@ -33,3 +32,5 @@ VECTOR_DB = os.getenv("VECTOR_DB", "src/data/chroma_db")
 
 # Optional: other settings
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+SUMMARIZATION_TOKEN_THRESHOLD = int(os.getenv("SUMMARIZATION_TOKEN_THRESHOLD", 8000))
+REFLECTION_INTERVAL_MINUTES = int(os.getenv("REFLECTION_INTERVAL_MINUTES", 5))

@@ -6,14 +6,11 @@ Handles client/model initialization and holds conversation state
 from typing import cast, List, Optional
 from uuid import uuid4, UUID
 
-from litellm import acompletion
-
-from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from src.clients import get_openai_client
 from src.config import settings
-from src.memory import episodic, summarizer, service  # service for MemoryService
+from src.memory import episodic, service  # service for MemoryService
 
 
 class BaseAgent:
