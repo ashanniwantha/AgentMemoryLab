@@ -19,11 +19,11 @@ class StyleCriticAgent(BaseAgent):
         if not draft:
             return "No draft available to critique"
 
-        prompt = f"""Review the following story draft's elements such as style, narrative flow, 
+        prompt = f"""Review the following draft's elements such as style, narrative flow, 
         attention to details, audience retention, and readability.
         Provide constructive criticisms and feedbacks in a concise form, focusing on how to improve the overall story:
         
-        Story:
+        Draft:
         {draft}
         
         Style feedback:"""
