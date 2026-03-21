@@ -1,5 +1,4 @@
 from uuid import UUID
-
 from src.agents.base import BaseAgent
 
 
@@ -12,19 +11,14 @@ class FactCriticAgent(BaseAgent):
         )
 
     async def critique(self) -> str:
-        """
-        Fetch the 'draft' field's value from semantic database.
-        Provde logical and factual based feedback on the current draft
-        """
         await self.memory_service.init()
 
-        draft = await self.memory_service.load_one_fact("draft")
-
+        draft = await self.memory_service.load_entry("draft", category="draft")
         if not draft:
-            return "No draft available to critique!"
+            return "No draft available to critique"
 
         prompt = f"""Review the following draft and provide constructive criticisms 
-        about it's logical and plot consistency, factual accuracty etc. 
+        about its logical and plot consistency, factual accuracy etc. 
         
         Draft:
         {draft}
@@ -39,5 +33,7 @@ class FactCriticAgent(BaseAgent):
         if feedback is None:
             feedback = ""
 
-        await self.memory_service.set_fact("fact_feedback", feedback)
+        await self.memory_service.store_entry(
+            "fact_feedback", feedback, category="feedback"
+        )
         return feedback

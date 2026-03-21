@@ -11,11 +11,10 @@ class StyleCriticAgent(BaseAgent):
         )
 
     async def critique(self) -> str:
-        """Generate style feedback on the current draft."""
         await self.memory_service.init()
 
-        # Retrieve draft from the memory
-        draft = await self.memory_service.load_one_fact("draft")
+        # Retrieve draft (category 'draft')
+        draft = await self.memory_service.load_entry("draft", category="draft")
         if not draft:
             return "No draft available to critique"
 
@@ -37,6 +36,8 @@ class StyleCriticAgent(BaseAgent):
         if feedback is None:
             return ""
 
-        # Store feedback in memory
-        await self.memory_service.set_fact("style_feedback", feedback)
+        # Store feedback with category 'feedback'
+        await self.memory_service.store_entry(
+            "style_feedback", feedback, category="feedback"
+        )
         return feedback

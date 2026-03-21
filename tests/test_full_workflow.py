@@ -15,9 +15,7 @@ async def main():
     draft_agent = DraftAgent(session_id)
     # Genarate draft
     print("\n--- Generating draft...---")
-    draft = await draft_agent.generate_draft(
-        "A story about how Eminem became the biggest artists in his time"
-    )
+    draft = await draft_agent.generate_draft("How did Micheal Jackson die?")
     print(f"Draft generated:\n{draft}.\n Saved in memory!")
 
     style_critic = StyleCriticAgent(session_id)
